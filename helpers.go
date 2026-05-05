@@ -30,7 +30,7 @@ func (d Default[T]) IsDefault(values []any, index int) bool {
 // If it fails or is the zero value, it returns the default.
 func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
 	typeStatus := DefaultType{
-		Message: GetLastDefaultValue(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
+		Message: Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
 		Ok:      true}
 
 	if input == nil {
@@ -59,7 +59,7 @@ func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
 func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, DefaultType) {
 	if index >= len(values) {
 		return d.defaultValue, DefaultType{
-			Message: GetLastDefaultValue(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
+			Message: Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
 			Ok:      true}
 	}
 	return d.Check(values[index], message...)
