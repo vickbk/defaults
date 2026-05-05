@@ -57,6 +57,14 @@ func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, De
 	return d.Check(value, message...)
 }
 
+func (d Default[T]) SafeCheckOrPanic(values []any, index int, message ...string) T {
+	val, status := d.SafeCheck(values, index, message...)
+	if !status.Ok {
+		panic(status)
+	}
+	return val
+}
+
 // CheckDefaults aggregates the correctness booleans.
 func CheckDefaults(args ...DefaultType) error {
 	errList := make([]error, 0, len(args))
