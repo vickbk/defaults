@@ -22,15 +22,16 @@ func (d Default[T]) IsDefault(values []any, index int) bool {
 		return true
 	}
 
-	_, ok := d.Check(values[index])
-	return !ok
+	_, t := d.Check(values[index])
+	return !t.Ok
 }
 
 // Check attempts to cast the input to type T.
 // If it fails or is the zero value, it returns the default.
-func (d Default[T]) Check(input any) (T, bool) {
+func (d Default[T]) Check(input any) (T, DefaultType) {
+	typeStatus := DefaultType{Message: "", Ok: true}
 	if input == nil {
-		return d.defaultValue, true
+		return d.defaultValue, typeStatus
 	}
 
 	val, ok := input.(T)
@@ -42,18 +43,19 @@ func (d Default[T]) Check(input any) (T, bool) {
 		// Only call IsNil on types that support it to avoid panics
 		if k == reflect.Ptr || k == reflect.Map || k == reflect.Slice || k == reflect.Chan || k == reflect.Interface || k == reflect.Func {
 			if v.IsNil() {
-				return d.defaultValue, true
+				return d.defaultValue, typeStatus
 			}
 		}
-		return d.defaultValue, false
+		typeStatus.Ok = false
+		return d.defaultValue, typeStatus
 	}
 
-	return val, true
+	return val, typeStatus
 }
 
-func (d Default[T]) SafeCheck(values []any, index int) (T, bool) {
+func (d Default[T]) SafeCheck(values []any, index int) (T, DefaultType) {
 	if index >= len(values) {
-		return d.defaultValue, true
+		return d.defaultValue, DefaultType{Message: "Index out of bounds", Ok: false}
 	}
 	return d.Check(values[index])
 }
