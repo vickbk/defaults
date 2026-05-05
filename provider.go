@@ -17,8 +17,8 @@ import (
 // Example:
 //
 //	val, status := DefaultValue(10).Check("not an int", "Age must be a number")
-func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
-	status := DefaultType{Ok: true, UsedDefault: true}
+func (d Provider[T]) Check(input any, message ...string) (T, Result) {
+	status := Result{Ok: true, UsedDefault: true}
 
 	if input == nil {
 		return d.defaultValue, status
@@ -55,8 +55,8 @@ func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
 // Example:
 //
 //	val, status := DefaultValue("Guest").SafeCheck(vars, 0)
-func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, DefaultType) {
-	value := any(nil)
+func (d Provider[T]) SafeCheck(values []any, index int, message ...string) (T, Result) {
+	var value any
 	if index < len(values) {
 		value = values[index]
 	}
@@ -70,7 +70,7 @@ func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, De
 // Example:
 //
 //	port := DefaultValue(8080).SafeCheckOrPanic(args, 0)
-func (d Default[T]) SafeCheckOrPanic(values []any, index int, message ...string) T {
+func (d Provider[T]) SafeCheckOrPanic(values []any, index int, message ...string) T {
 	val, status := d.SafeCheck(values, index, message...)
 	if !status.Ok {
 		panic(status.Message)

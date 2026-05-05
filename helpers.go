@@ -4,35 +4,35 @@ import (
 	"errors"
 )
 
-// DefaultValue initializes a Default[T] provider with a fallback value.
+// Value initializes a Provider[T] with a fallback value.
 //
 // Example:
 //
-//	ageDef := DefaultValue(21)
-func DefaultValue[T any](val T) Default[T] {
-	return Default[T]{defaultValue: val}
+//	ageDef := Value(21)
+func Value[T any](val T) Provider[T] {
+	return Provider[T]{defaultValue: val}
 }
 
-// DefaultArgsNormalize ensures a slice has a minimum length by padding it with nil.
+// Normalize ensures a slice has a minimum length by padding it with nil.
 // This prevents "index out of range" panics when processing variadic arguments.
 //
 // Example:
 //
-//	args := DefaultArgsNormalize([]any{1}, 3)
+//	args := Normalize([]any{1}, 3)
 //	// args is now []any{1, nil, nil}
-func DefaultArgsNormalize(values []any, needed int) []any {
+func Normalize(values []any, needed int) []any {
 	neededArgs := make([]any, needed)
 	copy(neededArgs, values)
 	return neededArgs
 }
 
-// CheckDefaults collects multiple DefaultType results and joins them into a single error.
+// Aggregate collects multiple results and joins them into a single error.
 // Returns nil if all status.Ok flags are true.
 //
 // Example:
 //
-//	err := CheckDefaults(status1, status2)
-func CheckDefaults(args ...DefaultType) error {
+//	err := Aggregate(status1, status2)
+func Aggregate(args ...Result) error {
 	errList := make([]error, 0, len(args))
 
 	for _, arg := range args {
