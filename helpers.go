@@ -50,7 +50,7 @@ func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
 
 		typeStatus.Ok = false
 		typeStatus.Message = Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue))
-		
+
 		return d.defaultValue, typeStatus
 	}
 
@@ -72,7 +72,7 @@ func CheckDefaults(args ...DefaultType) error {
 
 	for _, arg := range args {
 		if !arg.Ok {
-			errList = append(errList, errors.New(arg.Message))
+			errList = append(errList, arg)
 		}
 	}
 
