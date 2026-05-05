@@ -29,9 +29,7 @@ func (d Default[T]) IsDefault(values []any, index int) bool {
 // Check attempts to cast the input to type T.
 // If it fails or is the zero value, it returns the default.
 func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
-	typeStatus := DefaultType{
-		Message: Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
-		Ok:      true}
+	typeStatus := DefaultType{Ok: true}
 
 	if input == nil {
 		return d.defaultValue, typeStatus
@@ -49,7 +47,10 @@ func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
 				return d.defaultValue, typeStatus
 			}
 		}
+
 		typeStatus.Ok = false
+		typeStatus.Message = Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue))
+		
 		return d.defaultValue, typeStatus
 	}
 
@@ -57,12 +58,12 @@ func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
 }
 
 func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, DefaultType) {
-	if index >= len(values) {
-		return d.defaultValue, DefaultType{
-			Message: Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
-			Ok:      true}
+	value := any(nil)
+	if index < len(values) {
+		value = values[index]
 	}
-	return d.Check(values[index], message...)
+
+	return d.Check(value, message...)
 }
 
 // CheckDefaults aggregates the correctness booleans.
