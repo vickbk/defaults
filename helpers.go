@@ -2,8 +2,8 @@ package defaults
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
-	"strings"
 )
 
 func DefaultArgsNormalize(values []any, needed int) []any {
@@ -28,8 +28,11 @@ func (d Default[T]) IsDefault(values []any, index int) bool {
 
 // Check attempts to cast the input to type T.
 // If it fails or is the zero value, it returns the default.
-func (d Default[T]) Check(input any) (T, DefaultType) {
-	typeStatus := DefaultType{Message: "", Ok: true}
+func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
+	typeStatus := DefaultType{
+		Message: GetLastDefaultValue(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
+		Ok:      true}
+
 	if input == nil {
 		return d.defaultValue, typeStatus
 	}
@@ -53,27 +56,27 @@ func (d Default[T]) Check(input any) (T, DefaultType) {
 	return val, typeStatus
 }
 
-func (d Default[T]) SafeCheck(values []any, index int) (T, DefaultType) {
+func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, DefaultType) {
 	if index >= len(values) {
-		return d.defaultValue, DefaultType{Message: "Index out of bounds", Ok: false}
+		return d.defaultValue, DefaultType{
+			Message: GetLastDefaultValue(message, fmt.Sprintf("Invalid type for %T", d.defaultValue)),
+			Ok:      true}
 	}
-	return d.Check(values[index])
+	return d.Check(values[index], message...)
 }
 
 // CheckDefaults aggregates the correctness booleans.
-func CheckDefaults(args ...any) error {
-	errList := make([]string, 0, len(args)/2)
+func CheckDefaults(args ...DefaultType) error {
+	errList := make([]error, 0, len(args))
 
-	for i := 0; i < len(args); i += 2 {
-		ok := args[i].(bool)
-		errMsg := args[i+1].(string)
-		if !ok {
-			errList = append(errList, errMsg)
+	for _, arg := range args {
+		if !arg.Ok {
+			errList = append(errList, errors.New(arg.Message))
 		}
 	}
 
 	if len(errList) > 0 {
-		return errors.New(strings.Join(errList, ","))
+		return errors.Join(errList...)
 	}
 
 	return nil
