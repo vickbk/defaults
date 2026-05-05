@@ -20,32 +20,35 @@ func DefaultValue[T any](val T) Default[T] {
 // Check attempts to cast the input to type T.
 // If it fails or is the zero value, it returns the default.
 func (d Default[T]) Check(input any, message ...string) (T, DefaultType) {
-	typeStatus := DefaultType{Ok: true, UsedDefault: true}
+	status := DefaultType{Ok: true, UsedDefault: true}
 
 	if input == nil {
-		return d.defaultValue, typeStatus
+		return d.defaultValue, status
 	}
 
 	if val, ok := input.(T); ok {
-		typeStatus.UsedDefault = false
-		return val, typeStatus
+		status.UsedDefault = false
+		return val, status
 	}
 
 	// Type mismatch: Return default and 'false' for correctness
 	v := reflect.ValueOf(input)
-	k := v.Kind()
 
-	// Only call IsNil on types that support it to avoid panics
-	if k == reflect.Ptr || k == reflect.Map || k == reflect.Slice || k == reflect.Chan || k == reflect.Interface || k == reflect.Func {
-		if v.IsNil() {
-			return d.defaultValue, typeStatus
+	if v.IsValid() {
+
+		switch v.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+			if v.IsNil() {
+				return d.defaultValue, status
+			}
 		}
+
 	}
 
-	typeStatus.Ok = false
-	typeStatus.Message = Optional(message, fmt.Sprintf("Invalid type for %T", d.defaultValue))
+	status.Ok = false
+	status.Message = Optional(message, fmt.Sprintf("invalid type: expected %T, got %T", d.defaultValue, input))
 
-	return d.defaultValue, typeStatus
+	return d.defaultValue, status
 }
 
 func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, DefaultType) {
@@ -60,7 +63,7 @@ func (d Default[T]) SafeCheck(values []any, index int, message ...string) (T, De
 func (d Default[T]) SafeCheckOrPanic(values []any, index int, message ...string) T {
 	val, status := d.SafeCheck(values, index, message...)
 	if !status.Ok {
-		panic(status)
+		panic(status.Message)
 	}
 	return val
 }
