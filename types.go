@@ -7,5 +7,5 @@ type Default[T any] struct {
 
 type DefaultType struct {
 	Message string
-	Ok	  bool
+	Ok      bool
 }
