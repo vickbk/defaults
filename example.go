@@ -10,5 +10,5 @@ func HasDefaults(values ...any) {
 		panic(err)
 	}
 
-	fmt.Println(first, second)
+	fmt.Println(first, second, isInt.Ok, isString.Ok, isInt.UsedDefault, isString.UsedDefault)
 }

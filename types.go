@@ -6,6 +6,7 @@ type Default[T any] struct {
 }
 
 type DefaultType struct {
-	Message string
-	Ok      bool
+	Message     string
+	Ok          bool
+	UsedDefault bool
 }
