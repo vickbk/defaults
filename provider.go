@@ -9,14 +9,14 @@ import (
 // It returns the defaultValue and UsedDefault=true if the input is nil or a typed nil pointer.
 // If the type is mismatched, it returns an error status with Ok=false.
 // The optional message parameter allows for custom error messages on type mismatch.
-// Note: Be careful when using this directly with variadic arguments, as it may lead to "index out of range" panics if the expected index is not provided.
+// Note: Be careful when using this directly with variadic arguments, as it may lead to "index out of range" panics if the expected index is not provided (Normal case of optional arguments).
 //
 //	Consider using SafeCheck for safer access to variadic arguments.
-//	Or can use DefaultArgsNormalize to ensure the slice has enough elements before calling Check.
+//	Or can use Normalize to ensure the slice has enough elements before calling Check.
 //
 // Example:
 //
-//	val, status := DefaultValue(10).Check("not an int", "Age must be a number")
+//	val, status := defaults.Value(10).Check("not an int", "Age must be a number")
 func (d Provider[T]) Check(input any, message ...string) (T, Result) {
 	status := Result{Ok: true, UsedDefault: true}
 
@@ -54,7 +54,7 @@ func (d Provider[T]) Check(input any, message ...string) (T, Result) {
 //
 // Example:
 //
-//	val, status := DefaultValue("Guest").SafeCheck(vars, 0)
+//	val, status := defaults.Value("Guest").SafeCheck(vars, 0)
 func (d Provider[T]) SafeCheck(values []any, index int, message ...string) (T, Result) {
 	var value any
 	if index >= 0 && index < len(values) {
@@ -69,7 +69,7 @@ func (d Provider[T]) SafeCheck(values []any, index int, message ...string) (T, R
 //
 // Example:
 //
-//	port := DefaultValue(8080).SafeCheckOrPanic(args, 0)
+//	port := defaults.Value(8080).SafeCheckOrPanic(args, 0)
 func (d Provider[T]) SafeCheckOrPanic(values []any, index int, message ...string) T {
 	val, status := d.SafeCheck(values, index, message...)
 	if !status.Ok {
