@@ -6,11 +6,7 @@ package defaults
 //
 //	msg := Optional(customMessages, "Standard Error")
 func Optional[T any](values []T, defaultValue T) T {
-	if len(values) > 0 {
-		return values[0]
-	}
-
-	return defaultValue
+	return OptionalAt(values, 0, defaultValue)
 }
 
 // Optionals returns a slice of values where each element is taken from the input slice if it exists, or from the defaultValues if the input slice does not have enough elements.
