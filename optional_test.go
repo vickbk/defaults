@@ -1,6 +1,9 @@
 package defaults
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 // ============================================================================
 // Optional[T] Tests
@@ -199,3 +202,79 @@ func TestOptionalAtEmpty(t *testing.T) {
 // ============================================================================
 // Optionals[T] Tests
 // ============================================================================
+
+func TestOptionals(t *testing.T) {
+	tests := []struct {
+		name          string
+		values        []int
+		defaults      []int
+		expected      []int
+		description   string
+		shouldAllocate bool
+	}{
+		{
+			name:          "Empty values, defaults provided",
+			values:        []int{},
+			defaults:      []int{1, 2, 3},
+			expected:      []int{1, 2, 3},
+			description:   "len(slice) < len(defaults): padding required",
+			shouldAllocate: true,
+		},
+		{
+			name:          "Partial values, defaults provided",
+			values:        []int{100},
+			defaults:      []int{1, 2, 3},
+			expected:      []int{100, 2, 3},
+			description:   "len(slice) < len(defaults): pad missing positions",
+			shouldAllocate: true,
+		},
+		{
+			name:          "Values equal to defaults length",
+			values:        []int{10, 20, 30},
+			defaults:      []int{1, 2, 3},
+			expected:      []int{10, 20, 30},
+			description:   "len(slice) == len(defaults): zero-alloc path",
+			shouldAllocate: false,
+		},
+		{
+			name:          "Values exceed defaults length",
+			values:        []int{10, 20, 30, 40, 50},
+			defaults:      []int{1, 2, 3},
+			expected:      []int{10, 20, 30, 40, 50},
+			description:   "len(slice) > len(defaults): preserve user values",
+			shouldAllocate: false,
+		},
+		{
+			name:          "Single value, single default",
+			values:        []int{99},
+			defaults:      []int{1},
+			expected:      []int{99},
+			description:   "Single element equality",
+			shouldAllocate: false,
+		},
+		{
+			name:          "No values, single default",
+			values:        []int{},
+			defaults:      []int{5},
+			expected:      []int{5},
+			description:   "Pad single missing element",
+			shouldAllocate: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Optionals(tt.values, tt.defaults...)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("%s: Expected %v, got %v", tt.description, tt.expected, result)
+			}
+
+			// Verify allocation behavior
+			if !tt.shouldAllocate && len(tt.values) > 0 {
+				if &result[0] != &tt.values[0] {
+					t.Errorf("%s: Expected zero-alloc path (same underlying array), got new allocation", tt.description)
+				}
+			}
+		})
+	}
+}
