@@ -12,22 +12,29 @@ func Optional[T any](values []T, defaultValue T) T {
 
 	return defaultValue
 }
+
 // Optionals returns a slice of values where each element is taken from the input slice if it exists, or from the defaultValues if the input slice does not have enough elements.
 //
 // Example:
 //
 //	msgs := Optionals(customMessages, "Error 1", "Error 2", "Error 3")
 func Optionals[T any](values []T, defaultValues ...T) []T {
-	results := make([]T, len(defaultValues))
+	vLen := len(values)
+	dLen := len(defaultValues)
 
-	valueLen := len(values)
+	// If the user provided enough (or more) values, return the input slice.
+	if vLen >= dLen {
+		return values
+	}
 
-	for i, defaultValue := range defaultValues {
-		if i < valueLen {
-			results[i] = values[i]
-		} else {
-			results[i] = defaultValue
-		}
+	// We allocate exactly dLen because we know that's the required size.
+	results := make([]T, dLen)
+
+	// Copy original values into the start of results
+	copy(results, values)
+
+	for i := vLen; i < dLen; i++ {
+		results[i] = defaultValues[i]
 	}
 
 	return results
