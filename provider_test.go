@@ -188,3 +188,127 @@ func TestValueCheckStringType(t *testing.T) {
 		}
 	})
 }
+
+// ============================================================================
+// Provider SafeCheck Tests
+// ============================================================================
+
+func TestValueSafeCheck(t *testing.T) {
+	tests := []struct {
+		name        string
+		values      []any
+		index       int
+		defaultVal  int
+		expectedVal int
+		expectOk    bool
+		expectUsed  bool
+		description string
+	}{
+		{
+			name:        "In-bounds valid type",
+			values:      []any{42, "ignored"},
+			index:       0,
+			defaultVal:  10,
+			expectedVal: 42,
+			expectOk:    true,
+			expectUsed:  false,
+			description: "Correct type at valid index",
+		},
+		{
+			name:        "Out-of-bounds positive",
+			values:      []any{42},
+			index:       5,
+			defaultVal:  10,
+			expectedVal: 10,
+			expectOk:    true,
+			expectUsed:  true,
+			description: "Index beyond slice length returns default",
+		},
+		{
+			name:        "Negative index",
+			values:      []any{42, "test"},
+			index:       -1,
+			defaultVal:  10,
+			expectedVal: 10,
+			expectOk:    true,
+			expectUsed:  true,
+			description: "Negative index returns default",
+		},
+		{
+			name:        "Type mismatch in bounds",
+			values:      []any{"not an int", 42},
+			index:       0,
+			defaultVal:  10,
+			expectedVal: 10,
+			expectOk:    false,
+			expectUsed:  true,
+			description: "Wrong type at index returns error",
+		},
+		{
+			name:        "Empty slice",
+			values:      []any{},
+			index:       0,
+			defaultVal:  10,
+			expectedVal: 10,
+			expectOk:    true,
+			expectUsed:  true,
+			description: "Empty slice returns default",
+		},
+		{
+			name:        "Nil at index",
+			values:      []any{nil},
+			index:       0,
+			defaultVal:  10,
+			expectedVal: 10,
+			expectOk:    true,
+			expectUsed:  true,
+			description: "nil value at index returns default",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := Value(tt.defaultVal)
+			result, status := provider.SafeCheck(tt.values, tt.index)
+
+			if result != tt.expectedVal {
+				t.Errorf("%s: Expected value %d, got %d", tt.description, tt.expectedVal, result)
+			}
+
+			if status.Ok != tt.expectOk {
+				t.Errorf("%s: Expected Ok=%v, got Ok=%v", tt.description, tt.expectOk, status.Ok)
+			}
+
+			if status.UsedDefault != tt.expectUsed {
+				t.Errorf("%s: Expected UsedDefault=%v, got UsedDefault=%v", tt.description, tt.expectUsed, status.UsedDefault)
+			}
+		})
+	}
+}
+func TestValueSafeCheckWithTypedNil(t *testing.T) {
+	t.Run("Typed nil at index", func(t *testing.T) {
+		provider := Value(99)
+		_, status := provider.SafeCheck([]any{(*int)(nil)}, 0)
+
+		if !status.Ok {
+			t.Errorf("Expected Ok=true for typed nil, got Ok=false")
+		}
+
+		if !status.UsedDefault {
+			t.Errorf("Expected UsedDefault=true for typed nil, got false")
+		}
+	})
+
+	t.Run("Typed nil at missing index", func(t *testing.T) {
+		provider := Value(50)
+		result, status := provider.SafeCheck([]any{}, 0)
+
+		if result != 50 {
+			t.Errorf("Expected 50, got %d", result)
+		}
+
+		if !status.UsedDefault {
+			t.Errorf("Expected UsedDefault=true")
+		}
+	})
+}
