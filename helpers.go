@@ -26,13 +26,13 @@ func Normalize(values []any, needed int) []any {
 	return neededArgs
 }
 
-// Aggregate collects multiple results and joins them into a single error.
+// AggregateErrors collects multiple results and joins them into a single error.
 // Returns nil if all status.Ok flags are true.
 //
 // Example:
 //
-//	err := Aggregate(status1, status2)
-func Aggregate(args ...Result) error {
+//	err := AggregateErrors(status1, status2)
+func AggregateErrors(args ...Result) error {
 	errList := make([]error, 0, len(args))
 
 	for _, arg := range args {
