@@ -312,3 +312,74 @@ func TestValueSafeCheckWithTypedNil(t *testing.T) {
 		}
 	})
 }
+
+// ============================================================================
+// Provider SafeCheckOrPanic Tests
+// ============================================================================
+
+func TestValueSafeCheckOrPanic(t *testing.T) {
+	t.Run("Valid type does not panic", func(t *testing.T) {
+		provider := Value(10)
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic: %v", r)
+			}
+		}()
+
+		result := provider.SafeCheckOrPanic([]any{42}, 0)
+		if result != 42 {
+			t.Errorf("Expected 42, got %d", result)
+		}
+	})
+
+	t.Run("Missing index does not panic", func(t *testing.T) {
+		provider := Value(10)
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic on missing index: %v", r)
+			}
+		}()
+
+		result := provider.SafeCheckOrPanic([]any{}, 0)
+		if result != 10 {
+			t.Errorf("Expected default 10, got %d", result)
+		}
+	})
+
+	t.Run("Type mismatch panics", func(t *testing.T) {
+		provider := Value(10)
+		panicked := false
+
+		defer func() {
+			if r := recover(); r != nil {
+				panicked = true
+				if errMsg, ok := r.(string); !ok || !contains(errMsg, "invalid type") {
+					t.Errorf("Expected 'invalid type' error, got %v", r)
+				}
+			}
+		}()
+
+		provider.SafeCheckOrPanic([]any{"string"}, 0)
+
+		if !panicked {
+			t.Errorf("Expected panic on type mismatch, but didn't panic")
+		}
+	})
+
+	t.Run("Custom message in panic", func(t *testing.T) {
+		provider := Value(10)
+		customMsg := "Port must be a positive integer"
+
+		defer func() {
+			if r := recover(); r != nil {
+				if errMsg, ok := r.(string); ok && errMsg != customMsg {
+					t.Errorf("Expected custom message %q, got %q", customMsg, errMsg)
+				}
+			} else {
+				t.Errorf("Expected panic with custom message")
+			}
+		}()
+
+		provider.SafeCheckOrPanic([]any{"invalid"}, 0, customMsg)
+	})
+}
