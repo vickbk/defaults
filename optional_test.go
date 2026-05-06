@@ -124,10 +124,10 @@ func TestOptionalAt(t *testing.T) {
 	defaultVal := "default"
 
 	tests := []struct {
-		name       string
-		index      int
-		expected   string
-		desc       string
+		name     string
+		index    int
+		expected string
+		desc     string
 	}{
 		{
 			name:     "Index 0 in-bounds",
@@ -205,59 +205,59 @@ func TestOptionalAtEmpty(t *testing.T) {
 
 func TestOptionals(t *testing.T) {
 	tests := []struct {
-		name          string
-		values        []int
-		defaults      []int
-		expected      []int
-		description   string
+		name           string
+		values         []int
+		defaults       []int
+		expected       []int
+		description    string
 		shouldAllocate bool
 	}{
 		{
-			name:          "Empty values, defaults provided",
-			values:        []int{},
-			defaults:      []int{1, 2, 3},
-			expected:      []int{1, 2, 3},
-			description:   "len(slice) < len(defaults): padding required",
+			name:           "Empty values, defaults provided",
+			values:         []int{},
+			defaults:       []int{1, 2, 3},
+			expected:       []int{1, 2, 3},
+			description:    "len(slice) < len(defaults): padding required",
 			shouldAllocate: true,
 		},
 		{
-			name:          "Partial values, defaults provided",
-			values:        []int{100},
-			defaults:      []int{1, 2, 3},
-			expected:      []int{100, 2, 3},
-			description:   "len(slice) < len(defaults): pad missing positions",
+			name:           "Partial values, defaults provided",
+			values:         []int{100},
+			defaults:       []int{1, 2, 3},
+			expected:       []int{100, 2, 3},
+			description:    "len(slice) < len(defaults): pad missing positions",
 			shouldAllocate: true,
 		},
 		{
-			name:          "Values equal to defaults length",
-			values:        []int{10, 20, 30},
-			defaults:      []int{1, 2, 3},
-			expected:      []int{10, 20, 30},
-			description:   "len(slice) == len(defaults): zero-alloc path",
+			name:           "Values equal to defaults length",
+			values:         []int{10, 20, 30},
+			defaults:       []int{1, 2, 3},
+			expected:       []int{10, 20, 30},
+			description:    "len(slice) == len(defaults): zero-alloc path",
 			shouldAllocate: false,
 		},
 		{
-			name:          "Values exceed defaults length",
-			values:        []int{10, 20, 30, 40, 50},
-			defaults:      []int{1, 2, 3},
-			expected:      []int{10, 20, 30, 40, 50},
-			description:   "len(slice) > len(defaults): preserve user values",
+			name:           "Values exceed defaults length",
+			values:         []int{10, 20, 30, 40, 50},
+			defaults:       []int{1, 2, 3},
+			expected:       []int{10, 20, 30, 40, 50},
+			description:    "len(slice) > len(defaults): preserve user values",
 			shouldAllocate: false,
 		},
 		{
-			name:          "Single value, single default",
-			values:        []int{99},
-			defaults:      []int{1},
-			expected:      []int{99},
-			description:   "Single element equality",
+			name:           "Single value, single default",
+			values:         []int{99},
+			defaults:       []int{1},
+			expected:       []int{99},
+			description:    "Single element equality",
 			shouldAllocate: false,
 		},
 		{
-			name:          "No values, single default",
-			values:        []int{},
-			defaults:      []int{5},
-			expected:      []int{5},
-			description:   "Pad single missing element",
+			name:           "No values, single default",
+			values:         []int{},
+			defaults:       []int{5},
+			expected:       []int{5},
+			description:    "Pad single missing element",
 			shouldAllocate: true,
 		},
 	}
