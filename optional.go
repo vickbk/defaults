@@ -46,7 +46,7 @@ func Optionals[T any](values []T, defaultValues ...T) []T {
 //
 //	msg := OptionalAt(customMessages, 0, "Standard Error")
 func OptionalAt[T any](values []T, index int, defaultValue T) T {
-	if index < len(values) {
+	if index >= 0 && index < len(values) {
 		return values[index]
 	}
 

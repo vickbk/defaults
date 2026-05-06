@@ -57,7 +57,7 @@ func (d Provider[T]) Check(input any, message ...string) (T, Result) {
 //	val, status := DefaultValue("Guest").SafeCheck(vars, 0)
 func (d Provider[T]) SafeCheck(values []any, index int, message ...string) (T, Result) {
 	var value any
-	if index < len(values) {
+	if index >= 0 && index < len(values) {
 		value = values[index]
 	}
 
