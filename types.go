@@ -1,11 +1,14 @@
 package defaults
 
-// Default holds the fallback value for a specific type.
-type Default[T any] struct {
+// Provider is a container for a fallback value of a specific type.
+type Provider[T any] struct {
 	defaultValue T
 }
 
-type DefaultType struct {
-	Message string
-	Ok	  bool
+// Result encapsulates the outcome of a type check.
+// It implements the error interface.
+type Result struct {
+	Message     string
+	Ok          bool
+	UsedDefault bool
 }
