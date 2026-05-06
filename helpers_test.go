@@ -190,3 +190,36 @@ func TestAggregateErrorsMessages(t *testing.T) {
 		}
 	})
 }
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+// Simple implementation to avoid external dependency
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return len(substr) == 0
+}
+
+func hasError(err error, target string) bool {
+	if err == nil {
+		return false
+	}
+	if err.Error() == target {
+		return true
+	}
+	// Check if it's a wrapped error
+	u, ok := err.(interface{ Unwrap() []error })
+	if ok {
+		for _, e := range u.Unwrap() {
+			if hasError(e, target) {
+				return true
+			}
+		}
+	}
+	return false
+}
