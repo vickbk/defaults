@@ -39,3 +39,16 @@ func Optionals[T any](values []T, defaultValues ...T) []T {
 
 	return results
 }
+
+// OptionalAt returns the element at the specified index from the input slice or a defaultValue if the index is out of bounds.
+//
+// Example:
+//
+//	msg := OptionalAt(customMessages, 0, "Standard Error")
+func OptionalAt[T any](values []T, index int, defaultValue T) T {
+	if index < len(values) {
+		return values[index]
+	}
+
+	return defaultValue
+}
