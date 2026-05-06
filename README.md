@@ -6,6 +6,7 @@
 
 - **Fluent API:** Clean, readable syntax like `defaults.Value(30).SafeCheck(args, 0)`.
 - **Nil-Resilience:** Automatically detects and handles both raw `nil` and "typed nil" pointers (e.g., `(*int)(nil)`).
+- **Batch Processing:** High-performance handling of multiple optional parameters of the same type.
 - **Index Safety:** Prevents "index out of range" panics using `SafeCheck` without needing pre-normalization.
 - **Bulk Error Reporting:** Collect and join multiple type-mismatch errors using `AggregateErrors`.
 - **Zero Dependencies:** Uses only the Go standard library (including Generics and Reflection).
@@ -16,9 +17,9 @@
 go get github.com/vickbk/defaults
 ```
 
-## 🚀 Quick Start
+## 🚀 Usage Guide
 
-### 1. Simple Case: The `Optional` Helper
+### 1. Single Option: `Optional`
 
 If you only need to handle a **single** optional parameter at the end of a function, use the `Optional` function. It is the most performant way to handle a single fallback without struct overhead.
 
@@ -31,7 +32,21 @@ func Search(query string, tags ...string) {
 }
 ```
 
-### 2. Multiple Options: Using `SafeCheck` (Recommended)
+### 2. Batch Options: `Optionals`
+
+Best for multiple optional parameters of the **same type**. It ensures a minimum set of values are present while preserving any extra values provided by the user.
+
+```go
+func SetLimits(limits ...int) {
+    // Ensures we have at least 3 values.
+    // Optimization: Returns the original slice (Zero-Alloc) if input length >= 3.
+    res := defaults.Optionals(limits, 10, 20, 30)
+    var1 := res[0]
+    var2 := res[1]
+}
+```
+
+### 3. Mixed Types: `SafeCheck` (Recommended)
 
 When dealing with multiple optional parameters of different types, `SafeCheck` is the preferred method.
 
@@ -53,9 +68,9 @@ func Setup(name string, options ...any) error {
 }
 ```
 
-### 3. Direct Indexing: Using `Normalize`
+### 4. Direct Indexing: Using `Normalize` and `Check`
 
-Use `Normalize` **only** if you intend to access the slice indices directly (e.g., `args[i]`) or pass the slice to the standard `Check` method.
+Use `Normalize` **only** if you intend to access the slice indices directly (e.g., `args[i]`) and pass it to the standard `Check` method.
 
 ```go
 func CustomLogic(args ...any) {
@@ -66,7 +81,7 @@ func CustomLogic(args ...any) {
 }
 ```
 
-### Distinguishing Defaults
+### 5. Distinguishing Defaults
 
 You can check if a user actually provided a value or if the fallback was used.
 
@@ -82,7 +97,9 @@ if res.UsedDefault {
 
 ## ⚡ Performance & Constraints
 
-- **Interface Boxing (...any):** Using `...any` (variadic interfaces) introduces a performance gap compared to strictly typed parameters. In Go, passing values as `any` causes **interface boxing**, which often leads to heap allocations. This package is designed for ease of use and safety; for extremely high-frequency hot paths where every nanosecond counts, strictly typed structs are always faster.
+- **Zero-Allocation Paths:** - `Optional`: Zero-alloc if the slice is populated.
+  - `Optionals`: Zero-alloc if the input slice length is greater than or equal to the number of defaults provided.
+- **Interface Boxing (...any):** Using `...any` (variadic interfaces) introduces a performance gap compared to strictly typed parameters. In Go, passing values as `any` causes **interface boxing**, which often leads to heap allocations. For high-frequency hot paths, prefer `Optional` or `Optionals` with concrete types. This package is designed for ease of use and safety; for extremely high-frequency hot paths where every nanosecond counts, strictly typed structs are always faster.
 - **Allocation Efficiency:** Avoid using `Normalize` if you are already using `SafeCheck`. `SafeCheck` performs a simple length check, whereas `Normalize` allocates a new slice.
 - **Lazy Evaluation:** Error messages and `fmt.Sprintf` calls are only executed if a failure is detected. The "happy path" (successful type match) is optimized for speed.
 - **Reflection Overhead:** The package uses `reflect` only when a standard type assertion fails to detect "typed nils" (e.g., `(*int)(nil)`). This keeps the common success case fast.
@@ -93,12 +110,13 @@ if res.UsedDefault {
 
 ### Core Functions
 
-| Function                       | Description                                                                        |
-| :----------------------------- | :--------------------------------------------------------------------------------- |
-| `Optional[T](slice, fallback)` | **Highest Performance.** Best for a single trailing option.                        |
-| `Value[T](val T)`              | Creates a `Provider` for type `T` with a fallback value.                           |
-| `AggregateErrors(...Result)`   | Joins multiple type-mismatch results into a single `error`.                        |
-| `Normalize(slice, n)`          | Pads a slice with `nil` to a minimum length `n`. **Use only for direct indexing.** |
+| Function                           | Description                                                                        |
+| :--------------------------------- | :--------------------------------------------------------------------------------- |
+| `Optional[T](slice, fallback)`     | **Highest Performance.** Best for a single trailing option.                        |
+| `Optionals[T](slice, ...defaults)` | Ensures a minimum set of values. Zero-alloc happy path.                            |
+| `Value[T](val T)`                  | Creates a `Provider` for type `T` with a fallback value.                           |
+| `AggregateErrors(...Result)`       | Joins multiple type-mismatch results into a single `error`.                        |
+| `Normalize(slice, n)`              | Pads a slice with `nil` to a minimum length `n`. **Use only for direct indexing.** |
 
 ### The `Provider[T]` Methods
 
@@ -142,6 +160,8 @@ if len(args) > 0 {
 **With Go-Defaults:**
 
 ```go
+timeout := defaults.Optional(args, 30) // Recommended and type safe
+// or
 timeout, res := defaults.Value(30).SafeCheck(args, 0, "timeout must be int")
 ```
 
