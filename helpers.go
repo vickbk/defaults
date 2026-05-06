@@ -21,6 +21,9 @@ func Value[T any](val T) Provider[T] {
 //	args := Normalize([]any{1}, 3)
 //	// args is now []any{1, nil, nil}
 func Normalize(values []any, needed int) []any {
+	if len(values) >= needed {
+		return values
+	}
 	neededArgs := make([]any, needed)
 	copy(neededArgs, values)
 	return neededArgs
