@@ -29,7 +29,8 @@ timeout := defaults.Optional(args, 30)
 
 | Use Case                     | Recommended Function             | Performance Profile                                  |
 | :--------------------------- | :------------------------------- | :--------------------------------------------------- |
-| **Single** trailing option   | `Optional(slice, default)`       | **Highest.** Zero-alloc if slice is populated.       |
+| **First** trailing option    | `Optional(slice, default)`       | **Highest.** Zero-alloc                              |
+| **Specific** index           | `OptionalAt(slice, i, default)`  | **Highest** Zero-alloc                               |
 | **Batch** same-type options  | `Optionals(slice, ...defaults)`  | **Optimized.** Zero-alloc if length matches.         |
 | **Mixed** types & validation | `Value(default).SafeCheck(s, i)` | **Secure.** Handles boxing and reflection fallbacks. |
 
@@ -37,15 +38,17 @@ timeout := defaults.Optional(args, 30)
 
 ## 🚀 Usage Guide
 
-### 1. Single Fallback: `Optional`
+### 1. Targeted Extraction: `OptionalAt` & `Optional`
 
-Best for a single trailing optional parameter. It is the most performant way to handle a single fallback without struct overhead.
+Best for strictly typed slices. These provide zero-allocation access to specific indices without the need for manual boundary checks.
 
 ```go
-func Search(query string, tags ...string) {
-    // Returns tags[0] if exists, otherwise "all"
-    targetTag := defaults.Optional(tags, "all")
-    fmt.Println("Searching in tag:", targetTag)
+func Configure(modes ...string) {
+    // Grab a specific index; handles out-of-bounds and negative indices safely
+    secondary := defaults.OptionalAt(modes, 1, "standard")
+
+    // Shortcut for the first element
+    primary := defaults.Optional(modes, "debug")
 }
 ```
 
@@ -65,7 +68,7 @@ func SetRetryStrategy(intervals ...int) {
 
 ### 3. Type-Safe Validation: `SafeCheck` (Recommended)
 
-The preferred method for multiple optional parameters of different types.
+The preferred method for multiple optional parameters of different types (`...any`).
 
 > **Important:** `SafeCheck` handles index boundaries internally. You **do not** need to call `Normalize` when using this method, saving an unnecessary slice allocation.
 
@@ -97,8 +100,8 @@ func CustomLogic(args ...any) {
 
 ## ⚡ Performance & Constraints
 
-- **Zero-Allocation Paths:** `Optional` and `Optionals` provide zero-alloc paths when the input slice already meets the required length.
-- **Interface Boxing:** Using `...any` causes **interface boxing**, which can lead to heap allocations. For ultra-high-frequency hot paths, prefer `Optional` with concrete types.
+- **Zero-Allocation Paths:** `Optional`, `OptionalAt` and `Optionals` provide zero-alloc paths when the input slice already meets the required length.
+- **Interface Boxing:** Using `...any` causes **interface boxing**, which can lead to heap allocations. For ultra-high-frequency hot paths, prefer `Optional` functions with concrete types.
 - **Lazy Evaluation:** Error strings and formatting are only computed if a type mismatch actually occurs.
 - **Reflection:** `reflect` is only used as a fallback to detect "typed nils" (e.g., `(*int)(nil)`) when standard type assertion fails.
 
@@ -108,13 +111,14 @@ func CustomLogic(args ...any) {
 
 ### Core Functions
 
-| Function                           | Description                                                   |
-| :--------------------------------- | :------------------------------------------------------------ |
-| `Optional[T](slice, fallback)`     | Returns index 0 or the fallback value.                        |
-| `Optionals[T](slice, ...defaults)` | Pads a slice to a minimum length with specified defaults.     |
-| `Value[T](val T)`                  | Entry point for the generic `Provider` logic.                 |
-| `AggregateErrors(...Result)`       | Joins multiple `Result` errors into a single `error`.         |
-| `Normalize(slice, n)`              | Pads a slice to length `n`. **Use only for direct indexing**. |
+| Function                            | Description                                                                 |
+| :---------------------------------- | :-------------------------------------------------------------------------- |
+| `Optional[T](slice, fallback)`      | Returns index 0 or the fallback value.                                      |
+| `OptionalAt[T](slice, i, fallback)` | Returns index `i` or fallback. Negative indexes are considered out of band. |
+| `Optionals[T](slice, ...defaults)`  | Pads a slice to a minimum length with specified defaults.                   |
+| `Value[T](val T)`                   | Entry point for the generic `Provider` logic.                               |
+| `AggregateErrors(...Result)`        | Joins multiple `Result` errors into a single `error`.                       |
+| `Normalize(slice, n)`               | Pads a slice to length `n`. **Use only for direct indexing**.               |
 
 ### The `Result` Struct
 
