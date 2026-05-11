@@ -40,16 +40,16 @@ func failingInitializer(message string) Applier[applyConfig] {
 
 func TestApply(t *testing.T) {
 	tests := []struct {
-		name              string
-		target            *applyConfig
-		initializers     []Applier[applyConfig]
-		wantPort          int
-		wantHost          string
-		wantErr           bool
-		wantErrContains   []string
+		name            string
+		target          *applyConfig
+		initializers    []Applier[applyConfig]
+		wantPort        int
+		wantHost        string
+		wantErr         bool
+		wantErrContains []string
 	}{
 		{
-			name: "Success applies multiple initializers",
+			name:   "Success applies multiple initializers",
 			target: &applyConfig{Port: 80, Host: "localhost"},
 			initializers: []Applier[applyConfig]{
 				withPort(9000),
@@ -60,7 +60,7 @@ func TestApply(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name: "Nil target returns error",
+			name:   "Nil target returns error",
 			target: nil,
 			initializers: []Applier[applyConfig]{
 				withPort(9000),
@@ -69,7 +69,7 @@ func TestApply(t *testing.T) {
 			wantErrContains: []string{"target cannot be nil"},
 		},
 		{
-			name: "Nil initializer is ignored",
+			name:   "Nil initializer is ignored",
 			target: &applyConfig{Port: 80, Host: "localhost"},
 			initializers: []Applier[applyConfig]{
 				withPort(9000),
@@ -81,7 +81,7 @@ func TestApply(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name: "Multiple errors are joined",
+			name:   "Multiple errors are joined",
 			target: &applyConfig{Port: 80, Host: "localhost"},
 			initializers: []Applier[applyConfig]{
 				failingInitializer("first failure"),

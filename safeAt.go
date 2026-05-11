@@ -2,7 +2,6 @@ package defaults
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // defaults.SafeAt performs an index-safe check on a slice.
@@ -40,20 +39,12 @@ func SafeAt[T any](values []any, index int, defaultValue T, message ...string) (
 		return val, status
 	}
 
-	// Type mismatch: Return default and 'false' for correctness
-	v := reflect.ValueOf(value)
-
-	if v.IsValid() {
-
-		switch v.Kind() {
-		case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
-			if v.IsNil() {
-				return defaultValue, status
-			}
-		}
-
+	// Check for typed nil before full reflection
+	if isTypedNil(value) {
+		return defaultValue, status
 	}
 
+	// Type mismatch: Return default and 'false' for correctness
 	status.Ok = false
 	status.Message = Get(message, fmt.Sprintf("invalid type: expected %T, got %T", defaultValue, value))
 
