@@ -2,13 +2,14 @@ package defaults
 
 import "errors"
 
-// Apply executes a series of modifier functions (Applier) on a target struct pointer.
-// It is designed to safely handle struct initialization and configuration overrides.
+// defaults.Apply executes a series of modifier functions (default.Applier) on a target struct pointer.
+// It is designed to safely handle default values using struct initialization and configuration overrides.
+// The function takes a pointer to a struct of type T and a variadic list of Applier functions that modify the struct.
+// Each Applier function is responsible for applying a specific configuration or validation to the struct.
+// If any Applier returns an error, Apply collects these errors and returns them as a single error using errors.Join.
+// The function ensures that the target struct is not nil before applying any modifications, returning an error if it is.
+// This design allows for flexible and composable configuration of structs while providing robust error handling.
 //
-// Features:
-// - Returns the target pointer to allow for inline initialization.
-//
-// If the target pointer is nil, Apply returns a nil pointer and an error.
 // Example usage:
 //
 //		type Config struct {

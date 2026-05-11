@@ -20,6 +20,9 @@ import (
 // Example:
 //
 //	val, status := defaults.SafeAt([]int{}, 1, "not an int", "Age must be a number")
+//
+// Note: The function uses reflection to check for typed nil values, ensuring that it correctly identifies nil pointers and interfaces, which can be a common source of bugs in Go when dealing with slices of interfaces or pointers.
+// For multiple optional parameters of different types, prefer using the defaults.Apply function with custom Applier functions for better type safety and error handling.
 func SafeAt[T any](values []any, index int, defaultValue T, message ...string) (T, Result) {
 	status := Result{Ok: true, UsedDefault: true}
 
