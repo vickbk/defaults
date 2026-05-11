@@ -55,9 +55,10 @@ func Configure(modes ...string) {
 }
 ```
 
-### 2. Dynamic Validation (SafeAt, Required)
+### 2. Dynamic Validation (Sate, SafeAt, Required)
 
 The preferred method for `...any` variadics. Solves the "Typed Nil Paradox."
+**Note**: For high type accuracy, prefer using [`Apply(&struct)`](#3-struct-configuration-apply) instead for multiple optional parameters with different types
 
 ```go
 func Setup(options ...any) error {
@@ -103,7 +104,7 @@ if err != nil {
 | Function                     | Purpose                 | Status                                                      |
 | :--------------------------- | :---------------------- | :---------------------------------------------------------- |
 | `Value[T](val T)`            | Create a typed provider | **Deprecated** — Use direct functions(`Safe()`, `SafeAt()`) |
-| `Normalize(slice, n)`        | Pad slice with nils     | Legacy — Use `Safe()` or `SafeAt` to avoid overheads        |
+| `Normalize(slice, n)`        | Pad slice with nils     | Legacy — Use `Safe()` or `SafeAt()` to avoid overheads      |
 | `AggregateErrors(...Result)` | Join multiple Results   | Supported — Use with batch validation                       |
 
 ---
@@ -140,7 +141,7 @@ SetRetryStrategy(50)                          // [50, 500, 2000]
 SetRetryStrategy(50, 200, 1000, 5000)         // [50, 200, 1000, 5000] (zero-alloc)
 ```
 
-### Typed-Nil Protection: SafeAt (prefer `Apply(&Struct)` for type safety)
+### Typed-Nil Protection: SafeAt (prefer [`Apply(&Struct)`](#struct-configuration-apply) for type safety)
 
 ```go
 func ProcessData(options ...any) error {
@@ -154,6 +155,11 @@ func ProcessData(options ...any) error {
         return rStatus
     }
 
+    // or simply aggregate errors all together
+    if err := defaults.aggregateErrors(tStatus, rStatus); err != nil {
+        return err
+    }
+
     return nil
 }
 ```
@@ -163,6 +169,18 @@ func ProcessData(options ...any) error {
 ```go
 type Config struct { Port int; Host string }
 
+// basic usage (inline function declaration)
+func MyFunction(args ...defaults.Applier[Config]){
+    cfg, err := defaults.Apply(&{Config{Host:"localhost", Port:8080}}, args...)
+    // do your work
+}
+// calling:
+MyFunction() // will set default config as is... no need pass initial struct
+MyFunction(func (c *Config){
+    c.Port = 9000
+})          // Only updates the port
+
+// with helper functions
 func WithPort(p int) defaults.Applier[Config] {
     return func(c *Config) error {
         if p <= 0 || p > 65535 {
