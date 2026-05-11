@@ -1,12 +1,10 @@
 # defaults
 
-A lightweight, zero-allocation Go library for safely handling variadic arguments and struct configuration defaults. It provides a verb-based API that prioritizes performance and clarity, with built-in support for typed slices and dynamic `[]any` validation using reflection when necessary.
+**defaults** is a lightweight, zero-allocation Go library for safely handling optional variadic arguments and struct configuration. It bridges the gap between Go's strict type system and the flexibility of variadic parameters, providing a clean, verb-based API that handles "typed nil" pointers and index safety out of the box.
 
-## Overview
+---
 
-The `defaults` library solves a fundamental challenge in Go: providing flexible, safe access to optional variadic parameters without sacrificing type safety or performance. Whether you're extracting values from typed slices, validating mixed-type arguments, or configuring structs with functional options, `defaults` gives you the tools to handle these patterns idiomatically.
-
-### ⚡ The defaults Edge
+## ⚡ The defaults Edge
 
 **Standard Go:**
 
@@ -27,152 +25,128 @@ if len(args) > 0 {
 timeout := defaults.Get(args, 30)
 ```
 
-### Key Design Principles
+---
 
-- **Zero Allocations for Core Operations**: `Get`, `At`, and `Slice` operate without memory allocation for typed slices.
-- **Pure Functions**: No provider structs required for the typed API—direct, composable functions.
-- **Type-Safe Validation**: The "Safe" family uses reflection only when necessary for dynamic `[]any` slices.
-- **Graceful Fallbacks**: Built-in support for index boundary checks, nil pointers, and the "Typed Nil Paradox."
+## 🛠 At a Glance: Choosing the Right Tool
+
+| Category    | Use Case                  | Function                           | Performance                                 |
+| :---------- | :------------------------ | :--------------------------------- | :------------------------------------------ |
+| **Typed**   | First element             | `Get(slice, default)`              | **Highest.** Zero-alloc                     |
+| **Typed**   | Specific index            | `At(slice, i, default)`            | **Highest.** Zero-alloc                     |
+| **Typed**   | Batch/Padding             | `Slice(slice, ...defaults)`        | **Optimized.** Zero-alloc if length matches |
+| **Dynamic** | Validate type (index 0)   | `Safe(slice, default, msg)`        | **Secure.** Reflection fallback only        |
+| **Dynamic** | Validate type (any index) | `SafeAt(slice, i, default, msg)`   | **Secure.** Handles Typed Nil Paradox       |
+| **Dynamic** | Critical config           | `Required(slice, i, default, msg)` | **Strict.** Panics on type mismatch         |
+| **Structs** | Functional options        | `Apply(target, ...opts)`           | **Composable.** Error aggregation           |
 
 ---
 
-## Quick Start
+## 🚀 Usage Guide
+
+### 1. Typed Access (Get, At, Slice)
+
+Best for strictly typed slices. **Zero allocations, no reflection overhead.**
 
 ```go
-// Typed slice access (zero-alloc)
-msg := defaults.Get(customMessages, "Default Error")
-timeout := defaults.At(retries, 1, 8080)
-
-// Batch defaults
-strategy := defaults.Slice(intervals, 100, 500, 2000)
-
-// Dynamic validation with reflection
-val, status := defaults.SafeAt(options, 0, 10, "Port must be an int")
-if !status.Ok {
-    return status.Error() // Aggregated error
+func Configure(modes ...string) {
+    primary := defaults.Get(modes, "debug")          // Index 0
+    secondary := defaults.At(modes, 1, "standard")   // Specific index
+    strategy := defaults.Slice(intervals, 100, 500, 2000)  // Batch defaults
 }
+```
 
-// Struct configuration with functional options
-cfg, err := defaults.Apply(&Config{}, WithPort(9000), WithHost("localhost"))
+### 2. Dynamic Validation (SafeAt, Required)
+
+The preferred method for `...any` variadics. Solves the "Typed Nil Paradox."
+
+```go
+func Setup(options ...any) error {
+    retries, rStatus := defaults.SafeAt(options, 0, 3, "Retries must be int")
+    port := defaults.Required(options, 1, 8080)  // Panics if wrong type
+
+    return defaults.AggregateErrors(rStatus)
+}
+```
+
+### 3. Struct Configuration (Apply)
+
+Functional options pattern with built-in error aggregation.
+
+```go
+cfg, err := defaults.Apply(&Config{Port: 80},
+    WithPort(9000),
+    ValidateRequired,
+)
 if err != nil {
-    return err
+    return err  // All validation errors joined
 }
 ```
 
 ---
 
-## API Reference
+## 🛠 API Reference
 
-### Typed Access: Zero-Allocation Functions
+### Core Functions
 
-Use these functions with strongly-typed slices (`[]T`). They have no heap allocations and no reflection overhead.
+| Function                              | Description                  | Use Case                          |
+| :------------------------------------ | :--------------------------- | :-------------------------------- |
+| `Get[T](slice, default)`              | Returns index 0 or default   | First element access              |
+| `At[T](slice, i, default)`            | Returns index i or default   | Specific index, handles negative  |
+| `Slice[T](slice, ...defaults)`        | Pads slice to minimum length | Batch defaults, preserves extras  |
+| `Safe[T](slice, default, msg)`        | Validates type at index 0    | Single untyped value              |
+| `SafeAt[T](slice, i, default, msg)`   | Validates type at index i    | Untyped variadics with reflection |
+| `Required[T](slice, i, default, msg)` | Panics on type mismatch      | Critical internal configs         |
+| `Apply[T](target, ...opts)`           | Applies functional options   | Struct initialization             |
 
-| Function  | Signature                                        | Use Case                            |
-| --------- | ------------------------------------------------ | ----------------------------------- |
-| **Get**   | `Get[T](values []T, defaultValue T) T`           | Return first element or default     |
-| **At**    | `At[T](values []T, index int, defaultValue T) T` | Return element at index or default  |
-| **Slice** | `Slice[T](values []T, defaultValues ...T) []T`   | Ensure minimum length with defaults |
+### Helper Functions
 
-### Dynamic/Safe Access: Reflection-Based Functions
-
-Use these functions with `[]any` to validate type correctness at runtime. The "Typed Nil Paradox" handling ensures nil pointers and nil interfaces are detected correctly.
-
-| Function     | Signature                                                                           | Use Case                                 |
-| ------------ | ----------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Safe**     | `Safe[T](values []any, defaultValue T, message ...string) (T, Result)`              | Validate type at index 0 with reflection |
-| **SafeAt**   | `SafeAt[T](values []any, index int, defaultValue T, message ...string) (T, Result)` | Validate type at specific index          |
-| **Required** | `Required[T](values []any, index int, defaultValue T, message ...string) T`         | SafeAt with panic on type mismatch       |
-
-### Struct Configuration
-
-| Function           | Signature                                                 | Use Case                           |
-| ------------------ | --------------------------------------------------------- | ---------------------------------- |
-| **Apply**          | `Apply[T](target *T, appliers ...Applier[T]) (*T, error)` | Apply functional options to struct |
-| **Applier** (type) | `type Applier[T] func(*T) error`                          | Functional option function         |
-
-### Helpers
-
-| Function                                    | Purpose                                                   |
-| ------------------------------------------- | --------------------------------------------------------- |
-| `Value[T](val T) Provider[T]`               | Create a typed provider (legacy; prefer direct functions) |
-| `Normalize(values []any, needed int) []any` | Pad slice with nils to minimum length                     |
-| `AggregateErrors(args ...Result) error`     | Join multiple `Result` objects into a single error        |
+| Function                     | Purpose                 | Status                                                      |
+| :--------------------------- | :---------------------- | :---------------------------------------------------------- |
+| `Value[T](val T)`            | Create a typed provider | **Deprecated** — Use direct functions(`Safe()`, `SafeAt()`) |
+| `Normalize(slice, n)`        | Pad slice with nils     | Legacy — Use `Safe()` or `SafeAt` to avoid overheads        |
+| `AggregateErrors(...Result)` | Join multiple Results   | Supported — Use with batch validation                       |
 
 ---
 
-## Usage Examples
+## 📚 Detailed Examples
 
 ### Basic Fallbacks: Get & At
 
-Access elements from typed slices with automatic fallback values:
-
 ```go
-package main
-
-import "github.com/vickbk/defaults"
-
 func ConfigureServer(ports ...int) {
-    // Get the first port, default to 8080
     primary := defaults.Get(ports, 8080)
-
-    // Get the second port (index 1), default to 8443
     secondary := defaults.At(ports, 1, 8443)
-
-    // Out-of-bounds indices return the default
-    tertiary := defaults.At(ports, 10, 9000) // Safe, no panic
-
+    tertiary := defaults.At(ports, 10, 9000)  // Safe, no panic
     println(primary, secondary, tertiary)
 }
-```
 
-### Index-Safe Access: At with Negative Indices
-
-Safely handle boundary conditions:
-
-```go
-func ProcessLogs(entries ...string) {
-    // Negative indices are out-of-bounds; return default
-    first := defaults.At(entries, -1, "No Entry")
-
-    // This is zero-alloc and won't panic
-    println(first)
-}
+// Usage:
+ConfigureServer(9000)           // Ports: 9000, 8443, 9000
+ConfigureServer(9000, 9443)     // Ports: 9000, 9443, 9000
+ConfigureServer()               // Ports: 8080, 8443, 9000
 ```
 
 ### Batch Defaults: Slice
 
-Ensure a minimum number of values while preserving user-provided extras:
-
 ```go
 func SetRetryStrategy(intervals ...int) {
-    // If the user provides fewer than 3 values, pad with defaults
-    // If they provide 3 or more, return their slice as-is (zero-alloc)
     strategy := defaults.Slice(intervals, 100, 500, 2000)
-
     initial, secondary, tertiary := strategy[0], strategy[1], strategy[2]
-    println(initial, secondary, tertiary)
 }
 
-// Example calls:
-// SetRetryStrategy()           → [100, 500, 2000] (all defaults)
-// SetRetryStrategy(50)         → [50, 500, 2000] (padded)
-// SetRetryStrategy(50, 200)    → [50, 200, 2000] (padded)
-// SetRetryStrategy(50, 200, 1000, 5000) → [50, 200, 1000, 5000] (user's slice returned as-is)
+// Usage:
+SetRetryStrategy()                            // [100, 500, 2000]
+SetRetryStrategy(50)                          // [50, 500, 2000]
+SetRetryStrategy(50, 200, 1000, 5000)         // [50, 200, 1000, 5000] (zero-alloc)
 ```
 
-### Typed-Nil Protection: SafeAt
-
-Handle reflection-based nil checks for interface slices and the "Typed Nil Paradox":
+### Typed-Nil Protection: SafeAt (prefer `Apply(&Struct)` for type safety)
 
 ```go
 func ProcessData(options ...any) error {
-    // SafeAt handles typed nil pointers and interface nil values correctly
-    // Unlike simple type assertions, it uses reflection to detect nil pointers
-    // that would otherwise compare equal to non-nil interface values
-
     timeout, tStatus := defaults.SafeAt(options, 0, 30, "Timeout must be an int")
     if !tStatus.Ok {
-        return tStatus // Status implements error interface
+        return tStatus
     }
 
     retries, rStatus := defaults.SafeAt(options, 1, 3, "Retries must be an int")
@@ -180,214 +154,130 @@ func ProcessData(options ...any) error {
         return rStatus
     }
 
-    println(timeout, retries)
     return nil
 }
 ```
 
-### Struct Configuration: Apply with Functional Options
-
-Use the functional options pattern for composable, validated struct initialization:
+### Struct Configuration: Apply
 
 ```go
-type Config struct {
-    Port     int
-    Host     string
-    Timeout  time.Duration
-    Retries  int
-}
+type Config struct { Port int; Host string }
 
-// Define Applier functions
-func WithPort(port int) defaults.Applier[Config] {
+func WithPort(p int) defaults.Applier[Config] {
     return func(c *Config) error {
-        if port <= 0 || port > 65535 {
-            return fmt.Errorf("invalid port: %d", port)
+        if p <= 0 || p > 65535 {
+            return fmt.Errorf("invalid port: %d", p)
         }
-        c.Port = port
-        return nil
-    }
-}
-
-func WithHost(host string) defaults.Applier[Config] {
-    return func(c *Config) error {
-        if host == "" {
-            return fmt.Errorf("host cannot be empty")
-        }
-        c.Host = host
-        return nil
-    }
-}
-
-func WithTimeout(d time.Duration) defaults.Applier[Config] {
-    return func(c *Config) error {
-        if d <= 0 {
-            return fmt.Errorf("timeout must be positive")
-        }
-        c.Timeout = d
+        c.Port = p
         return nil
     }
 }
 
 func ValidateRequired(c *Config) error {
     if c.Port == 0 {
-        return fmt.Errorf("port is required")
-    }
-    if c.Host == "" {
-        return fmt.Errorf("host is required")
+        return fmt.Errorf("port required")
     }
     return nil
 }
 
-// Usage
-func main() {
-    cfg, err := defaults.Apply(
-        &Config{
-            Port:    8080,
-            Host:    "localhost",
-            Timeout: 30 * time.Second,
-            Retries: 3,
-        },
-        WithPort(9000),           // Override port
-        WithTimeout(60 * time.Second),
-        ValidateRequired,         // Validation function
-    )
-
-    if err != nil {
-        // errors.Join aggregates all Applier errors
-        fmt.Printf("Configuration errors: %v\n", err)
-        return
-    }
-
-    fmt.Printf("Config: %+v\n", cfg)
+// Usage:
+cfg, err := defaults.Apply(
+    &Config{Host: "localhost", Port: 8080},
+    WithPort(9000),
+    ValidateRequired,
+)
+if err != nil {
+    return err  // errors.Join aggregates all failures
 }
 ```
 
-### Advanced Validation with Error Aggregation
-
-Combine multiple validations and return all errors at once:
+### Error Aggregation
 
 ```go
 func Setup(options ...any) error {
-    retries, rStatus := defaults.SafeAt(options, 0, 3, "Retries must be an int")
-    timeout, tStatus := defaults.SafeAt(options, 1, 30, "Timeout must be an int")
-    host, hStatus := defaults.SafeAt(options, 2, "localhost", "Host must be a string")
+    retries, rStatus := defaults.SafeAt(options, 0, 3, "Retries must be int")
+    timeout, tStatus := defaults.SafeAt(options, 1, 30, "Timeout must be int")
+    host, hStatus := defaults.SafeAt(options, 2, "localhost", "Host must be string")
 
-    // Aggregate all validation errors; returns nil if all statuses are Ok
-    if err := defaults.AggregateErrors(rStatus, tStatus, hStatus); err != nil {
-        return err // All errors joined via errors.Join
-    }
-
-    println(retries, timeout, host)
-    return nil
+    return defaults.AggregateErrors(rStatus, tStatus, hStatus)
 }
 ```
 
 ---
 
-## Migration Guide: From v0.1 to v0.2 API
+## 🔄 Migration Guide (v0.1 → v0.2)
 
-The v0.2 API replaces the provider-based Optional pattern with pure, verb-based functions. Below is a mapping of the old API to the new:
+The new verb-based API replaces the provider pattern. **Old functions still work but are deprecated.**
 
-| Old API                                            | New API                              | Notes                                                 |
-| -------------------------------------------------- | ------------------------------------ | ----------------------------------------------------- |
-| `Optional(slice, default)`                         | `Get(slice, default)`                | Preferred shortcut for first element (index 0)        |
-| `OptionalAt(slice, i, default)`                    | `At(slice, i, default)`              | Direct index access, zero-alloc                       |
-| `Optionals(slice, ...defaults)`                    | `Slice(slice, ...defaults)`          | Ensures minimum length, preserves extras              |
-| `Value(default).SafeCheck(options, i, msg)`        | `SafeAt(options, i, default, msg)`   | Direct function, no provider construction             |
-| `Value(default).SafeCheckOrPanic(options, i, msg)` | `Required(options, i, default, msg)` | Panics on type mismatch                               |
-| (N/A)                                              | `Apply(cfg, appliers...)`            | **New**: Functional options for struct initialization |
-| (N/A)                                              | `Safe(options, default, msg)`        | **New**: SafeAt at index 0 only                       |
+| v0.1 (Deprecated)                 | v0.2 (Recommended)   | Notes                      |
+| :-------------------------------- | :------------------- | :------------------------- |
+| `Optional(s, d)`                  | `Get(s, d)`          | Direct replacement         |
+| `OptionalAt(s, i, d)`             | `At(s, i, d)`        | Zero-alloc maintained      |
+| `Optionals(s, ...d)`              | `Slice(s, ...d)`     | Behavior identical         |
+| `Value(d).SafeCheck(s, i)`        | `SafeAt(s, i, d)`    | Removed Provider overhead  |
+| `Value(d).SafeCheckOrPanic(s, i)` | `Required(s, i, d)`  | Same semantics             |
+| (New)                             | `Apply(target, ...)` | Functional options pattern |
+| (New)                             | `Safe(s, d)`         | SafeAt at index 0 only     |
 
-### Migration Examples
+**Migration Example:**
 
-**Before (v0.1):**
+Before:
 
 ```go
-func Configure(options ...any) {
-    timeout, err := defaults.Value(30).SafeCheck(options, 0)
-    if !err.Ok {
-        return err
-    }
-    println(timeout)
-}
+timeout, err := defaults.Value(30).SafeCheck(options, 0)
 ```
 
-**After (v0.2):**
+After:
 
 ```go
-func Configure(options ...any) {
-    timeout, err := defaults.SafeAt(options, 0, 30)
-    if !err.Ok {
-        return err
-    }
-    println(timeout)
-}
+timeout, err := defaults.SafeAt(options, 0, 30)
 ```
 
 ---
 
-## Performance Guarantees
+## ⚡ Performance & Constraints
 
-### Zero-Allocation Tier
-
-The core API (`Get`, `At`, `Slice`) maintains **zero allocations** for typical use cases:
-
-- `Get` and `At`: Zero allocations, no reflection. Direct slice access.
-- `Slice`: Zero allocations when the input slice has length ≥ the number of defaults. Allocates exactly once when padding is needed.
-
-### Reflection Tier
-
-The "Safe" family (`Safe`, `SafeAt`, `Required`) uses reflection **only when type validation is needed** for `[]any` inputs:
-
-- Type assertion is attempted first (fast path).
-- Reflection fallback handles typed nil pointers and interface edge cases.
-- No reflection occurs for correctly-typed inputs.
-
-### Struct Configuration Tier
-
-`Apply` is optimized for typical functional options patterns:
-
-- Linear iteration over Appliers.
-- Errors are aggregated via `errors.Join`.
-- No unnecessary allocations beyond error collection.
+- **Zero-Allocation Paths:** `Get`, `At`, and `Slice` (when length matches) provide zero-alloc paths with no reflection.
+- **Interface Boxing:** Using `...any` causes boxing, which can allocate. For hot paths, prefer typed slices with `Get`/`At` or struct initializer `Apply`.
+- **Lazy Evaluation:** Error strings are only formatted if a type mismatch occurs.
+- **Reflection:** Only used as fallback in `Safe` family to detect "typed nils" (e.g., `(*int)(nil)`).
+- **Struct Configuration:** `Apply` pre-allocates error slice capacity for linear iteration over options.
 
 ---
 
 ## Error Handling
 
-All functions that perform validation return a `Result` type that implements the `error` interface:
+Functions that validate return a `Result` type implementing the `error` interface:
 
 ```go
 type Result struct {
-    Message     string // Error message (if any)
-    Ok          bool   // true if validation passed
-    UsedDefault bool   // true if default was used
-}
-
-// Implement error interface
-func (r Result) Error() string {
-    return r.Message
+    Message     string  // Error message (if any)
+    Ok          bool    // Validation passed?
+    UsedDefault bool    // Default value used?
 }
 ```
 
-Use `AggregateErrors` to combine multiple Results into a single error:
+Combine multiple results with `AggregateErrors`:
 
 ```go
 err := defaults.AggregateErrors(status1, status2, status3)
-if err != nil {
-    // err is the result of errors.Join with all failed statuses
-}
+// Returns errors.Join if any status.Ok is false
 ```
 
 ---
 
 ## Why `defaults`?
 
-Go's type system and variadic arguments create a tension:
+Go's type system and variadics create three challenges:
 
-1. **Type Safety**: Go is strongly typed, but variadics are often `...any`.
-2. **Index Safety**: Accessing variadic arguments without bounds checking risks panics.
-3. **Nil Handling**: Go's interface system makes "typed nil" pointers a subtle bug source.
-4. **Performance**: Solutions that solve the above should not require allocations.
+1. **The Index Panic:** Accessing `args[0]` when empty.
+2. **The Typed Nil Paradox:** A `nil` pointer in an interface passes `!= nil` checks but panics on access.
+3. **The Boilerplate:** 10 lines of type assertions for one optional parameter.
 
-The `defaults` library bridges this gap with a clean, idiomatic API that respects Go's values: simplicity, clarity, and performance.
+The `defaults` library solves all three idiomatically, with **zero allocations on the fast path**, respecting Go's core values: simplicity, clarity, and performance.
+
+---
+
+## ⚖️ License
+
+Distributed under the MIT License.
