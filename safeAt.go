@@ -4,24 +4,21 @@ import (
 	"fmt"
 )
 
-// defaults.SafeAt performs an index-safe check on a slice.
-// If the index is out of bounds, it automatically returns the default value of the T with the Results.
-//
-// Example:
-//
-//	val, status := defaults.SafeAt(vars,0,"Guest")
-//
-// It validates if an input matches type T.
+// SafeAt performs an index-safe check on a slice. If the index is out of bounds,
+// it automatically returns the default value. It validates if an input matches type T.
 // It returns the defaultValue and UsedDefault=true if the input is nil or a typed nil pointer.
 // If the type is mismatched, it returns an error status with Ok=false.
-// The optional message parameter allows for custom error messages on type mismatch.
+//
+// This function handles the Typed Nil Paradox using reflection fallback only when necessary.
+// For strictly typed slices, prefer Get/At for better performance.
 //
 // Example:
 //
-//	val, status := defaults.SafeAt([]int{}, 1, "not an int", "Age must be a number")
+//	val, status := defaults.SafeAt([]any{42}, 0, 0, "must be int")
+//	// val=42, status.Ok=true
 //
-// Note: The function uses reflection to check for typed nil values, ensuring that it correctly identifies nil pointers and interfaces, which can be a common source of bugs in Go when dealing with slices of interfaces or pointers.
-// For multiple optional parameters of different types, prefer using the defaults.Apply function with custom Applier functions for better type safety and error handling.
+//	val, status := defaults.SafeAt([]any{"bad"}, 0, 0, "must be int")
+//	// val=0, status.Ok=false, status.Message="invalid type: expected int, got string"
 func SafeAt[T any](values []any, index int, defaultValue T, message ...string) (T, Result) {
 	status := Result{Ok: true, UsedDefault: true}
 
