@@ -53,11 +53,14 @@ func Apply[T any](target *T, initializers ...Applier[T]) (*T, error) {
 		return nil, errors.New("target cannot be nil")
 	}
 
-	var errs []error = make([]error, 0, len(initializers))
+	var errs []error
 
 	for _, initializer := range initializers {
 		if initializer != nil {
 			if err := initializer(target); err != nil {
+				if errs == nil {
+					errs = make([]error, 0, len(initializers))
+				}
 				errs = append(errs, err)
 			}
 		}
