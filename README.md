@@ -43,7 +43,7 @@ timeout := defaults.Get(args, 30)
 
 ## 🚀 Usage Guide
 
-### 1. Typed Access (Get, At, Slice)
+### 1. Typed Access (`Get`, `At`, `Slice`)
 
 Best for strictly typed slices. **Zero allocations, no reflection overhead.**
 
@@ -51,14 +51,17 @@ Best for strictly typed slices. **Zero allocations, no reflection overhead.**
 func Configure(modes ...string) {
     primary := defaults.Get(modes, "debug")          // Index 0
     secondary := defaults.At(modes, 1, "standard")   // Specific index
-    strategy := defaults.Slice(intervals, 100, 500, 2000)  // Batch defaults
+
+    // Ensures a minimum length of 3, padding with defaults if necessary
+    strategy := defaults.Slice(intervals, 100, 500, 2000)
 }
 ```
 
-### 2. Dynamic Validation (Sate, SafeAt, Required)
+### 2. Dynamic Validation (`Safe`, `SafeAt`, `Required`)
 
-The preferred method for `...any` variadics. Solves the "Typed Nil Paradox."
-**Note**: For high type accuracy, prefer using [`Apply(&struct)`](#3-struct-configuration-apply) instead for multiple optional parameters with different types
+The preferred method for `...any` variadics. Solves the **Typed Nil Paradox** (where a nil pointer inside an interface satisfies `!= nil` but panics on access).
+
+**Note**: To keep go default type checking, prefer using [`Apply(&struct)`](#3-struct-configuration-apply) instead for multiple optional parameters with different types
 
 ```go
 func Setup(options ...any) error {
@@ -69,17 +72,19 @@ func Setup(options ...any) error {
 }
 ```
 
-### 3. Struct Configuration (Apply)
+### 3. Struct Configuration (`Apply`)
 
-Functional options pattern with built-in error aggregation.
+Functional options pattern with built-in error aggregation using `errors.Join`.
 
 ```go
-cfg, err := defaults.Apply(&Config{Port: 80},
+type Config struct { Port int; Host string }
+
+cfg, err := defaults.Apply(&Config{Host: "localhost", Port: 80},
     WithPort(9000),
     ValidateRequired,
 )
 if err != nil {
-    return err  // All validation errors joined
+    return err // All validation errors joined
 }
 ```
 
@@ -111,76 +116,34 @@ if err != nil {
 
 ## 📚 Detailed Examples
 
-### Basic Fallbacks: Get & At
+### Basic Fallbacks: `Get` & `At`
 
 ```go
 func ConfigureServer(ports ...int) {
     primary := defaults.Get(ports, 8080)
     secondary := defaults.At(ports, 1, 8443)
     tertiary := defaults.At(ports, 10, 9000)  // Safe, no panic
-    println(primary, secondary, tertiary)
 }
 
 // Usage:
-ConfigureServer(9000)           // Ports: 9000, 8443, 9000
-ConfigureServer(9000, 9443)     // Ports: 9000, 9443, 9000
-ConfigureServer()               // Ports: 8080, 8443, 9000
+ConfigureServer(9000)        // Ports: 9000, 8443, 9000
+ConfigureServer()            // Ports: 8080, 8443, 9000
 ```
 
-### Batch Defaults: Slice
+### Batch Defaults: `Slice`
 
 ```go
 func SetRetryStrategy(intervals ...int) {
+    // Pads input to length 3 using the provided defaults
     strategy := defaults.Slice(intervals, 100, 500, 2000)
+
     initial, secondary, tertiary := strategy[0], strategy[1], strategy[2]
 }
-
-// Usage:
-SetRetryStrategy()                            // [100, 500, 2000]
-SetRetryStrategy(50)                          // [50, 500, 2000]
-SetRetryStrategy(50, 200, 1000, 5000)         // [50, 200, 1000, 5000] (zero-alloc)
 ```
 
-### Typed-Nil Protection: SafeAt (prefer [`Apply(&Struct)`](#struct-configuration-apply) for type safety)
+### Struct Configuration: `Apply`
 
 ```go
-func ProcessData(options ...any) error {
-    timeout, tStatus := defaults.SafeAt(options, 0, 30, "Timeout must be an int")
-    if !tStatus.Ok {
-        return tStatus
-    }
-
-    retries, rStatus := defaults.SafeAt(options, 1, 3, "Retries must be an int")
-    if !rStatus.Ok {
-        return rStatus
-    }
-
-    // or simply aggregate errors all together
-    if err := defaults.aggregateErrors(tStatus, rStatus); err != nil {
-        return err
-    }
-
-    return nil
-}
-```
-
-### Struct Configuration: Apply
-
-```go
-type Config struct { Port int; Host string }
-
-// basic usage (inline function declaration)
-func MyFunction(args ...defaults.Applier[Config]){
-    cfg, err := defaults.Apply(&{Config{Host:"localhost", Port:8080}}, args...)
-    // do your work
-}
-// calling:
-MyFunction() // will set default config as is... no need pass initial struct
-MyFunction(func (c *Config){
-    c.Port = 9000
-})          // Only updates the port
-
-// with helper functions
 func WithPort(p int) defaults.Applier[Config] {
     return func(c *Config) error {
         if p <= 0 || p > 65535 {
@@ -191,96 +154,35 @@ func WithPort(p int) defaults.Applier[Config] {
     }
 }
 
-func ValidateRequired(c *Config) error {
-    if c.Port == 0 {
-        return fmt.Errorf("port required")
-    }
-    return nil
-}
-
 // Usage:
 cfg, err := defaults.Apply(
     &Config{Host: "localhost", Port: 8080},
     WithPort(9000),
-    ValidateRequired,
 )
-if err != nil {
-    return err  // errors.Join aggregates all failures
-}
-```
-
-### Error Aggregation
-
-```go
-func Setup(options ...any) error {
-    retries, rStatus := defaults.SafeAt(options, 0, 3, "Retries must be int")
-    timeout, tStatus := defaults.SafeAt(options, 1, 30, "Timeout must be int")
-    host, hStatus := defaults.SafeAt(options, 2, "localhost", "Host must be string")
-
-    return defaults.AggregateErrors(rStatus, tStatus, hStatus)
-}
 ```
 
 ---
 
 ## 🔄 Migration Guide (v0.1 → v0.2)
 
-The new verb-based API replaces the provider pattern. **Old functions still work but are deprecated.**
+The new verb-based API replaces the provider pattern. **Old functions are deprecated but still supported.**
 
-| v0.1 (Deprecated)                 | v0.2 (Recommended)   | Notes                      |
-| :-------------------------------- | :------------------- | :------------------------- |
-| `Optional(s, d)`                  | `Get(s, d)`          | Direct replacement         |
-| `OptionalAt(s, i, d)`             | `At(s, i, d)`        | Zero-alloc maintained      |
-| `Optionals(s, ...d)`              | `Slice(s, ...d)`     | Behavior identical         |
-| `Value(d).SafeCheck(s, i)`        | `SafeAt(s, i, d)`    | Removed Provider overhead  |
-| `Value(d).SafeCheckOrPanic(s, i)` | `Required(s, i, d)`  | Same semantics             |
-| (New)                             | `Apply(target, ...)` | Functional options pattern |
-| (New)                             | `Safe(s, d)`         | SafeAt at index 0 only     |
-
-**Migration Example:**
-
-Before:
-
-```go
-timeout, err := defaults.Value(30).SafeCheck(options, 0)
-```
-
-After:
-
-```go
-timeout, err := defaults.SafeAt(options, 0, 30)
-```
+| v0.1 (Deprecated)           | v0.2 (Recommended)  | Notes                     |
+| :-------------------------- | :------------------ | :------------------------ |
+| `Optional(s, d)`            | `Get(s, d)`         | Direct replacement        |
+| `OptionalAt(s, i, d)`       | `At(s, i, d)`       | Zero-alloc maintained     |
+| `Optionals(s, ...d)`        | `Slice(s, ...d)`    | Behavior identical        |
+| `Value(d).SafeCheck(s, i)`  | `SafeAt(s, i, d)`   | Removed Provider overhead |
+| `Value(d).SafeCheckOrPanic` | `Required(s, i, d)` | Same semantics            |
 
 ---
 
 ## ⚡ Performance & Constraints
 
 - **Zero-Allocation Paths:** `Get`, `At`, and `Slice` (when length matches) provide zero-alloc paths with no reflection.
-- **Interface Boxing:** Using `...any` causes boxing, which can allocate. For hot paths, prefer typed slices with `Get`/`At` or struct initializer `Apply`.
-- **Lazy Evaluation:** Error strings are only formatted if a type mismatch occurs.
+- **Interface Boxing:** Using `...any` causes boxing. For hot paths, prefer typed slices with `Get`/`At` or `Apply`.
+- **Lazy Evaluation:** Error strings are only formatted if a type mismatch actually occurs.
 - **Reflection:** Only used as fallback in `Safe` family to detect "typed nils" (e.g., `(*int)(nil)`).
-- **Struct Configuration:** `Apply` pre-allocates error slice capacity for linear iteration over options.
-
----
-
-## Error Handling
-
-Functions that validate return a `Result` type implementing the `error` interface:
-
-```go
-type Result struct {
-    Message     string  // Error message (if any)
-    Ok          bool    // Validation passed?
-    UsedDefault bool    // Default value used?
-}
-```
-
-Combine multiple results with `AggregateErrors`:
-
-```go
-err := defaults.AggregateErrors(status1, status2, status3)
-// Returns errors.Join if any status.Ok is false
-```
 
 ---
 
@@ -288,9 +190,9 @@ err := defaults.AggregateErrors(status1, status2, status3)
 
 Go's type system and variadics create three challenges:
 
-1. **The Index Panic:** Accessing `args[0]` when empty.
-2. **The Typed Nil Paradox:** A `nil` pointer in an interface passes `!= nil` checks but panics on access.
-3. **The Boilerplate:** 10 lines of type assertions for one optional parameter.
+1.  **The Index Panic:** Accessing `args[0]` when empty.
+2.  **The Typed Nil Paradox:** A `nil` pointer in an interface passes `!= nil` checks but panics on access.
+3.  **The Boilerplate:** Writing 10 lines of type assertions for a single optional parameter.
 
 The `defaults` library solves all three idiomatically, with **zero allocations on the fast path**, respecting Go's core values: simplicity, clarity, and performance.
 
