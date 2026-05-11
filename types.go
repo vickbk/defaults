@@ -12,3 +12,5 @@ type Result struct {
 	Ok          bool
 	UsedDefault bool
 }
+
+type Applier[T any] func(*T) error
