@@ -12,3 +12,6 @@ type Result struct {
 	Ok          bool
 	UsedDefault bool
 }
+
+// defaults.Applier is a function type that modifies a struct of type T and returns an error if the modification fails.
+type Applier[T any] func(*T) error
