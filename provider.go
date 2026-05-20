@@ -11,9 +11,9 @@ package defaults
 //
 // Example:
 //
-//	val, status := defaults.Value(10).Check("not an int", "Age must be a number")
+//	val, status := Value(10).Check("not an int", "Age must be a number")
 //
-// Deprecated: use defaults.Safe instead but make sure to pass in the entire slice insted of indexing it directly
+// Deprecated: use Safe instead but make sure to pass in the entire slice insted of indexing it directly
 func (d Provider[T]) Check(input any, message ...string) (T, Result) {
 	return Safe([]any{input}, d.defaultValue, message...)
 }
@@ -23,9 +23,9 @@ func (d Provider[T]) Check(input any, message ...string) (T, Result) {
 //
 // Example:
 //
-//	val, status := defaults.Value("Guest").SafeCheck(vars, 0)
+//	val, status := Value("Guest").SafeCheck(vars, 0)
 //
-// Deprecated: use defaults.SafeAt instead for improved performance
+// Deprecated: use SafeAt instead for improved performance
 func (d Provider[T]) SafeCheck(values []any, index int, message ...string) (T, Result) {
 	return SafeAt(values, index, d.defaultValue, message...)
 }
@@ -35,9 +35,9 @@ func (d Provider[T]) SafeCheck(values []any, index int, message ...string) (T, R
 //
 // Example:
 //
-//	port := defaults.Value(8080).SafeCheckOrPanic(args, 0)
+//	port := Value(8080).SafeCheckOrPanic(args, 0)
 //
-// Deprecated: use defaults.Required instead for better performance
+// Deprecated: use Required instead for better performance
 func (d Provider[T]) SafeCheckOrPanic(values []any, index int, message ...string) T {
 	return Required(values, index, d.defaultValue, message...)
 }

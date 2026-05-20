@@ -1,0 +1,7 @@
+ignoreGeneratedHeader = false
+severity = "warning"
+confidence = 0.8
+errorCode = 1
+warningCode = 0
+
+[rule.redefines-builtin-id]

@@ -8,8 +8,8 @@ package defaults
 // Example:
 //
 //	modes := []string{"debug", "info", "error"}
-//	mode := defaults.At(modes, 1, "unknown") // Returns "info"
-//	mode := defaults.At(modes, 10, "unknown") // Returns "unknown"
+//	mode := At(modes, 1, "unknown") // Returns "info"
+//	mode := At(modes, 10, "unknown") // Returns "unknown"
 func At[T any](values []T, index int, defaultValue T) T {
 	if index >= 0 && index < len(values) {
 		return values[index]

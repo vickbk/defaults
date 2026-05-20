@@ -4,7 +4,7 @@ package defaults
 //
 // Example:
 //
-//	msgs := defaults.Slice(customMessages, "Error 1", "Error 2", "Error 3")
+//	msgs := Slice(customMessages, "Error 1", "Error 2", "Error 3")
 func Slice[T any](values []T, defaultValues ...T) []T {
 	vLen := len(values)
 	dLen := len(defaultValues)
