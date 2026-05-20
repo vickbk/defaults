@@ -6,10 +6,10 @@ package defaults
 // Example:
 //
 //	ports := []int{8080, 8443}
-//	port := defaults.Get(ports, 3000) // Returns 8080
+//	port := Get(ports, 3000) // Returns 8080
 //
 //	empty := []int{}
-//	port := defaults.Get(empty, 3000) // Returns 3000
+//	port := Get(empty, 3000) // Returns 3000
 func Get[T any](values []T, defaultValue T) T {
 	return At(values, 0, defaultValue)
 }

@@ -38,7 +38,7 @@ import "errors"
 //	}
 //
 //	func MyFunction(setters ...Applier[Config]) {
-//		cfg, err := defaults.Apply(&Config{Host: "localhost", Port: 8080}, setters...)
+//		cfg, err := Apply(&Config{Host: "localhost", Port: 8080}, setters...)
 //		if err != nil {
 //			// handle error
 //		}

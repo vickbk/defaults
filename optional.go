@@ -4,9 +4,9 @@ package defaults
 //
 // Example:
 //
-//	msg := defaults.OptionalAt(customMessages, 0, "Standard Error")
+//	msg := OptionalAt(customMessages, 0, "Standard Error")
 //
-// Deprecated: Use defaults.At instead for a classic naming
+// Deprecated: Use At instead for a classic naming
 func OptionalAt[T any](values []T, index int, defaultValue T) T {
 	return At(values, index, defaultValue)
 }
@@ -15,9 +15,9 @@ func OptionalAt[T any](values []T, index int, defaultValue T) T {
 //
 // Example:
 //
-//	msg := defaults.Optional(customMessages, "Standard Error")
+//	msg := Optional(customMessages, "Standard Error")
 //
-// Deprecated: use defaults.Get instead
+// Deprecated: use Get instead
 func Optional[T any](values []T, defaultValue T) T {
 	return Get(values, defaultValue)
 }
@@ -28,7 +28,7 @@ func Optional[T any](values []T, defaultValue T) T {
 //
 //	msgs := Optionals(customMessages, "Error 1", "Error 2", "Error 3")
 //
-// Deprecated: use defaults.Slice instead
+// Deprecated: use Slice instead
 func Optionals[T any](values []T, defaultValues ...T) []T {
 
 	return Slice(values, defaultValues...)

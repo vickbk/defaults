@@ -14,10 +14,10 @@ import (
 //
 // Example:
 //
-//	val, status := defaults.SafeAt([]any{42}, 0, 0, "must be int")
+//	val, status := SafeAt([]any{42}, 0, 0, "must be int")
 //	// val=42, status.Ok=true
 //
-//	val, status := defaults.SafeAt([]any{"bad"}, 0, 0, "must be int")
+//	val, status := SafeAt([]any{"bad"}, 0, 0, "must be int")
 //	// val=0, status.Ok=false, status.Message="invalid type: expected int, got string"
 func SafeAt[T any](values []any, index int, defaultValue T, message ...string) (T, Result) {
 	status := Result{Ok: true, UsedDefault: true}

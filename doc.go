@@ -31,16 +31,16 @@
 //
 // For strictly typed slices, use Get/At/Slice for maximum performance:
 //
-//	timeout := defaults.Get(timeouts, 30*time.Second)
+//	timeout := Get(timeouts, 30*time.Second)
 //
 // For dynamic any variadics, use SafeAt/Required for type safety:
 //
-//	port, status := defaults.SafeAt(args, 0, 8080, "port must be int")
+//	port, status := SafeAt(args, 0, 8080, "port must be int")
 //	if !status.Ok {
 //	    log.Fatal(status.Message)
 //	}
 //
 // For struct configuration, use Apply with functional options:
 //
-//	cfg, err := defaults.Apply(&Config{}, WithPort(9000), ValidateConfig)
+//	cfg, err := Apply(&Config{}, WithPort(9000), ValidateConfig)
 package defaults
