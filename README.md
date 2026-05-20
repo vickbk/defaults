@@ -163,20 +163,6 @@ cfg, err := defaults.Apply(
 
 ---
 
-## 🔄 Migration Guide (v0.1 → v0.2)
-
-The new verb-based API replaces the provider pattern. **Old functions are deprecated but still supported.**
-
-| v0.1 (Deprecated)           | v0.2 (Recommended)  | Notes                     |
-| :-------------------------- | :------------------ | :------------------------ |
-| `Optional(s, d)`            | `Get(s, d)`         | Direct replacement        |
-| `OptionalAt(s, i, d)`       | `At(s, i, d)`       | Zero-alloc maintained     |
-| `Optionals(s, ...d)`        | `Slice(s, ...d)`    | Behavior identical        |
-| `Value(d).SafeCheck(s, i)`  | `SafeAt(s, i, d)`   | Removed Provider overhead |
-| `Value(d).SafeCheckOrPanic` | `Required(s, i, d)` | Same semantics            |
-
----
-
 ## ⚡ Performance & Constraints
 
 - **Zero-Allocation Paths:** `Get`, `At`, and `Slice` (when length matches) provide zero-alloc paths with no reflection.
