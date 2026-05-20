@@ -24,5 +24,8 @@ jobs:
             - name: Run Code Quality Check
               run: go vet ./... # Runs the Go vet tool to check for potential issues
 
+            - name: Install Revive
+              run: go install github.com/mgechev/revive@latest # Installs the Revive linter
+
             - name: Run revive
               run: revive -config revive.toml -formatter stylish -set_exit_status ./...
